@@ -21,11 +21,9 @@ public class Renderer implements Serializable{
     /** 表格字体 */
     private float ECGChartTextSize = 24;
     /** 没有颜色值 */
-    public static final int NO_COLOR = 0;
-    /** 默认背景颜色-灰白色 */
-    public static final int BACKGROUND_COLOR = 0xFFF0F0F0;
+    public int NO_COLOR = 0;
     /** 默认字体颜色 */
-    public static final int TEXT_COLOR = Color.BLACK;
+    private int TextColor = Color.BLACK;
     /** 建立一个普通的字体样式 */
     private static final Typeface REGULAR_TEXT_FONT = Typeface
             .create(Typeface.SERIF, Typeface.NORMAL);
@@ -36,7 +34,7 @@ public class Renderer implements Serializable{
     /** 字体typeface */
     private Typeface ECGTextTypeface;
     /** 表格的背景颜色 */
-    private int ECGBackgroundColor;
+    private int ECGBackgroundColor = 0xFFF0F0F0;
     /** 坐标轴是否可见 */
     private boolean ECGShowAxes = true;
     /** 坐标轴颜色 */
@@ -52,6 +50,14 @@ public class Renderer implements Serializable{
      */
     public String getECGChartLabel() {
         return ECGChartLabel;
+    }
+
+    public void setTextColor(int textColor) {
+        TextColor = textColor;
+    }
+
+    public int getTextColor() {
+        return TextColor;
     }
 
     /**

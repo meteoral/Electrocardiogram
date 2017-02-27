@@ -8,6 +8,7 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
@@ -69,6 +70,30 @@ public class ChartView extends View{
     public void setRender(Renderer render) {
         this.render = render;
     }
+
+    @Override
+    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        int speSize = MeasureSpec.getSize(heightMeasureSpec);
+        int speMode = MeasureSpec.getMode(heightMeasureSpec);
+        Log.d("MyView", "---speSize = " + speSize + "");
+        Log.d("MyView", "---speMode = " + speMode + "");
+        if(speMode == MeasureSpec.AT_MOST){
+            Log.d("MyView", "---AT_MOST---");
+        }
+        if(speMode == MeasureSpec.EXACTLY){
+            Log.d("MyView", "---EXACTLY---");
+        }
+        if(speMode == MeasureSpec.UNSPECIFIED){
+            Log.d("MyView", "---UNSPECIFIED---");
+        }
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), speSize);
+        width = getMeasuredWidth();
+        height = getMeasuredHeight();
+    }
+    @Override
+    public void onSizeChanged (int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+    }
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -84,23 +109,23 @@ public class ChartView extends View{
 
     /**
      * 绘制心率图的背景
+     * 整个屏幕表示6秒内的心电图
      * @param canvas 画布
      */
     public void DrawBackgroud(Canvas canvas)
     {
         /* 创建背景色画笔 */
         Paint background = new Paint();
-        background.setColor(Renderer.BACKGROUND_COLOR);//设置心率图灰色背景
+        background.setColor(render.getECGBackgroundColor());//设置心率图灰色背景
         Paint backP = new Paint();
         backP.setColor(render.getECGAxesColor());
         backP.setAlpha(100);
-        width = getMeasuredWidth();
-        height = getMeasuredHeight();
         rect = canvas.getClipBounds();
         canvas.drawRect(0, 0, width, height, background);
         /* 是否绘制横纵轴 */
         if(render.isECGShowAxes()) {
-            /* 心电图每小格40ms
+            /*  通常采用25mm/s纸速记录，1小格=1mm=0.04秒。纵坐标电压1小格=1mm=0.1mv
+             *  心电图每小格40ms 一屏幕显示6秒的数据，则：
              *  6000/40 = 屏幕横向共150个小格
              *  150个小格平均分布在width宽上
              *  横纵grid的步距 */
@@ -129,7 +154,7 @@ public class ChartView extends View{
         /* 是否绘制Label标签 */
         if (render.isECGShowLabel()) {
             Paint labelPaint = new Paint();
-            labelPaint.setColor(Renderer.TEXT_COLOR);
+            labelPaint.setColor(render.getTextColor());
             labelPaint.setTypeface(render.getECGTextTypeface());
             labelPaint.setTextSize(render.getECGChartTextSize());
             labelPaint.setTextAlign(Paint.Align.CENTER);
@@ -147,7 +172,16 @@ public class ChartView extends View{
         canvas.saveLayerAlpha(new RectF(rect), 0xFF, Canvas.MATRIX_SAVE_FLAG);
         p.setColor(Color.BLACK);
         p.setStrokeWidth(3);
+        canvas.translate(0,height/2);   // move to the center line of the canvas.
+        canvas.drawLines(drawData,p);
+    }
 
+    public void DrawChartT(Canvas canvas){
+        Paint p = new Paint();
+        canvas.saveLayerAlpha(new RectF(rect), 0xFF, Canvas.MATRIX_SAVE_FLAG);
+        p.setColor(Color.BLACK);
+        p.setStrokeWidth(3);
+        canvas.translate(0,height/2);   // move to the center line of the canvas.
         canvas.drawLines(drawData,p);
     }
 
@@ -159,39 +193,21 @@ public class ChartView extends View{
      */
     public boolean getDrawData(int dataType)
     {
+        int hz = 50;
+        int totalData = hz * 6;
         float[] data = { -0.087912f,-0.10884f,-0.10047f,0.071167f,1.0633f,-0.07954f,-0.63632f,-0.28885f,-0.041863f,0.0083726f,0.083726f,0.10047f,0.16745f,0.23443f,0.3056f,0.35165f,0.427f,0.42282f,0.32234f,0.17582f,0.012559f,-0.050235f,-0.066981f,-0.092098f,-0.092098f,-0.092098f,-0.087912f,-0.07954f,-0.066981f,-0.075353f,-0.083726f,-0.096285f,-0.087912f,-0.087912f,-0.092098f,-0.10466f,-0.087912f,-0.087912f,-0.092098f,-0.087912f,-0.087912f,-0.07954f,-0.066981f,-0.075353f,-0.083726f,-0.096285f,0.020931f,-0.041863f,-0.062794f,-0.075353f,-0.092098f,-0.03349f,0.83307f,0.94192f,-0.61957f,-0.43119f,-0.046049f,0.041863f,0.16327f,0.15908f,0.2428f,0.31397f,0.41026f,0.49398f,0.59027f,0.59027f,0.50235f,0.30141f,0.13396f,0.016745f,-0.037677f,-0.041863f,-0.041863f,-0.03349f,-0.03349f,-0.025118f,-0.037677f,-0.03349f,-0.046049f,-0.025118f,-0.058608f,-0.058608f,-0.062794f,-0.058608f,-0.066981f,-0.062794f,-0.058608f,-0.083726f,-0.071167f,-0.066981f,-0.071167f,-0.071167f,-0.041863f,0f,-0.050235f,-0.07954f,-0.07954f,-0.062794f,0.11722f,0.99215f,0.012559f,-0.71586f,-0.33909f,-0.041863f,0.012559f,0.07954f,0.12977f,0.20094f,0.28885f,0.37258f,0.46886f,0.51073f,0.51073f,0.41026f,0.20931f,0.075353f,-0.016745f,-0.062794f,-0.075353f,-0.075353f,-0.071167f,-0.046049f,0.012559f,-0.058608f,-0.054422f,-0.050235f,-0.062794f,-0.066981f,-0.066981f,-0.066981f,-0.020931f,-0.054422f,-0.071167f,-0.075353f,-0.066981f,-0.075353f,-0.062794f,-0.037677f,-0.050235f,-0.041863f,0.0083726f,-0.029304f,-0.062794f,-0.07954f,-0.046049f,-0.016745f,0.9461f,0.75353f,-0.67818f,-0.41444f,-0.037677f,-0.0041863f,0.058608f,0.12559f,0.18001f,0.27211f,0.38095f,0.44375f,0.51073f,0.49817f,0.41444f,0.26374f,0.13815f,0.029304f,-0.025118f,-0.046049f,-0.058608f,-0.054422f,-0.03349f,-0.050235f,-0.041863f,-0.054422f,-0.062794f,-0.075353f,-0.075353f,-0.10884f,-0.075353f,-0.087912f,-0.087912f,-0.096285f,-0.087912f,-0.087912f,-0.10884f,-0.11303f,-0.10047f,-0.092098f,-0.10884f,-0.0083726f,-0.020931f,-0.07954f,-0.10466f,-0.11303f,-0.07954f,0.15489f,1.0215f,-0.3977f,-0.71167f,-0.32653f,-0.046049f,0.016745f,0.07954f,0.15489f,0.22187f,0.31397f,0.41026f,0.50654f,0.54003f,0.56934f,0.41444f,0.23443f,0.071167f,-0.012559f,-0.046049f,-0.066981f,-0.062794f,-0.062794f,-0.041863f,-0.050235f,-0.066981f,-0.071167f,-0.066981f,-0.096285f,-0.092098f,-0.092098f,-0.083726f,-0.083726f,-0.083726f,-0.07954f,-0.083726f,-0.087912f,-0.087912f,-0.087912f,-0.075353f,-0.066981f,-0.07954f,-0.0083726f,-0.0083726f,-0.07954f,-0.075353f,-0.092098f,-0.075353f,0.071167f,0.98796f,0.012559f,-0.7033f,-0.32653f,-0.041863f,0.020931f,0.087912f,0.12559f,0.19257f,0.25536f,0.3349f,0.43537f,0.44375f,0.46468f,0.3349f,0.17582f,0.03349f,-0.025118f,-0.054422f,-0.092098f,-0.083726f,-0.07954f,-0.037677f,-0.016745f,-0.03349f,-0.029304f,-0.037677f,-0.062794f,-0.041863f,-0.046049f,-0.029304f,-0.03349f,-0.020931f,-0.03349f,-0.012559f,-0.016745f,-0.020931f,-0.029304f,-0.029304f,-0.0083726f,-0.029304f,-0.03349f,-0.041863f,0.071167f,0.0083726f,-0.029304f,-0.046049f,-0.012559f,-0.0083726f,0.7033f,1.4401f,-0.41026f,-0.41863f,-0.12559f,0.012559f,0.071167f,0.1214f,0.1842f,0.27211f,0.34328f,0.43537f,0.51073f,0.5484f,0.53585f,0.38095f,0.20931f,0.071167f,0f,-0.020931f,-0.037677f,-0.03349f,-0.012559f,-0.025118f,-0.016745f,-0.0083726f,-0.037677f,-0.046049f,-0.071167f,-0.071167f,-0.066981f,-0.087912f,-0.087912f,-0.087912f,-0.10047f,-0.087912f,-0.096285f,-0.083726f,-0.07954f,-0.087912f,-0.087912f,0.029304f,-0.025118f,-0.071167f,-0.10884f,-0.10466f,-0.062794f,0.56934f,1.147f,-0.70748f,-0.60283f,-0.16745f,0.029304f,0.075353f,0.16327f,0.22187f,0.30141f,0.40188f,0.49817f,0.59445f,0.59445f,0.52747f,0.36839f,0.14233f,0.012559f,-0.037677f,-0.058608f,-0.062794f,-0.058608f,-0.025118f,-0.029304f,-0.025118f,-0.041863f,-0.037677f,-0.066981f,-0.066981f,-0.075353f,-0.062794f,-0.066981f,-0.087912f,-0.062794f,-0.10466f,-0.07954f,-0.071167f,-0.07954f,-0.066981f,-0.071167f,0.029304f,-0.012559f,-0.083726f,-0.062794f,-0.096285f,-0.066981f,0.28048f,1.0256f,-0.4898f,-0.66143f,-0.23443f,0.012559f,0.075353f,0.096285f,0.17582f,0.23862f,0.31816f,0.38932f,0.48561f,0.51491f,0.51073f,0.35583f,0.1842f,0.058608f,-0.029304f,-0.050235f,-0.041863f,-0.071167f,-0.062794f,-0.071167f,-0.054422f,-0.029304f,-0.062794f,-0.066981f,-0.083726f,-0.10047f,-0.087912f,-0.087912f,-0.062794f,-0.075353f,-0.087912f,-0.07954f,-0.092098f,-0.075353f,-0.062794f,-0.075353f,-0.054422f,0.0083726f,-0.050235f,-0.083726f,-0.10466f,-0.087912f,-0.025118f,0.89168f,0.26792f,-0.73679f,-0.40188f,-0.07954f,-0.012559f,0.046049f,0.11722f,0.15908f,0.23862f,0.32653f,0.3349f,0.38932f,0.38095f,0.32653f,0.18838f,0.066981f,-0.037677f,-0.037677f,-0.058608f,-0.071167f,-0.054422f,-0.03349f,-0.025118f,-0.037677f,-0.041863f,-0.037677f,-0.075353f,-0.083726f,-0.10047f,-0.10466f,-0.096285f,-0.096285f,-0.096285f,-0.07954f,-0.075353f,-0.071167f,-0.071167f,-0.092098f,-0.071167f,-0.016745f,-0.071167f,-0.07954f,-0.087912f,-0.07954f,0.0083726f,1.0424f,0.28048f,-0.56096f,-0.30141f,-0.037677f,0.0083726f,0.046049f,0.07954f,0.13815f,0.18838f,0.2428f,0.26374f,0.31397f,0.31397f,0.24699f,0.14652f,0.07954f,0f,-0.016745f,-0.037677f,-0.050235f,-0.041863f,-0.029304f,-0.046049f,-0.041863f,-0.041863f,-0.066981f,-0.058608f,-0.03349f,-0.071167f,-0.071167f,-0.071167f,-0.066981f,-0.058608f,-0.075353f,-0.07954f,-0.07954f,-0.066981f,-0.083726f,0.029304f,-0.020931f,-0.046049f,-0.083726f,-0.066981f,-0.03349f,0.89587f,1.0005f,-0.61957f,-0.42282f,-0.062794f,0.016745f,0.058608f,0.092098f,0.15908f,0.23862f,0.30979f,0.38095f,0.42282f,0.43537f,0.39351f,0.2428f,0.096285f,0.0041863f,-0.050235f,-0.071167f,-0.041863f,-0.071167f,-0.062794f,-0.071167f,-0.062794f,-0.087912f,-0.07954f,-0.092098f,-0.07954f,-0.10047f,-0.083726f,-0.07954f,-0.092098f,-0.087912f,-0.07954f,-0.075353f,-0.071167f,-0.050235f,0.0083726f,-0.041863f,-0.071167f,-0.092098f,-0.071167f,0.025118f,0.96285f,-0.020931f,-0.71586f,-0.34746f,-0.025118f,0.046049f,0.10466f,0.17582f,0.2763f,0.3056f,0.38514f,0.46468f,0.47305f,0.46049f,0.36002f,0.19676f,0.058608f,-0.025118f,-0.041863f,-0.054422f,-0.054422f,-0.041863f,-0.046049f,-0.037677f,-0.03349f,-0.046049f,-0.071167f,-0.083726f,-0.083726f,-0.087912f,-0.087912f,-0.083726f,-0.087912f,-0.037677f,-0.071167f,-0.071167f,-0.058608f,-0.10466f,0.03349f,-0.012559f,-0.066981f,-0.07954f,-0.087912f,-0.03349f,0.56096f,1.2224f,-0.55259f,-0.54003f,-0.15071f,-0.012559f,0.046049f,0.12559f,0.17582f,0.25955f,0.31816f,0.38932f,0.46049f,0.47305f,0.41863f,0.3056f,0.14233f,0.029304f,-0.016745f,-0.050235f,-0.050235f,-0.058608f,-0.054422f,-0.037677f,-0.046049f,-0.058608f,-0.07954f,-0.071167f,-0.066981f,-0.07954f,-0.058608f,-0.071167f,-0.066981f,-0.075353f,-0.075353f,-0.075353f,-0.071167f,-0.071167f,-0.054422f,-0.062794f,0.012559f,-0.037677f,-0.071167f,-0.075353f,-0.062794f,-0.012559f,0.93354f,0.55678f,-0.69492f,-0.3977f,-0.046049f,0.020931f,0.066981f,0.12977f,0.18838f,0.26792f,0.34746f,0.41026f,0.45631f,0.43537f,0.41863f,0.23862f,0.10047f,0.016745f,-0.03349f,-0.029304f,-0.041863f,-0.016745f,0f,-0.012559f,0.0041863f,-0.0083726f,-0.012559f,-0.016745f,-0.037677f,-0.037677f,-0.029304f,-0.037677f,-0.03349f,-0.03349f,-0.03349f,-0.029304f,-0.046049f,-0.041863f,-0.050235f,-0.03349f,0.037677f,-0.03349f,-0.050235f,-0.025118f,-0.046049f,0f,0.96285f,0.3977f,-0.68655f,-0.3977f,-0.016745f,0.029304f,0.071167f,0.12559f,0.18001f,0.26792f,0.34746f,0.43537f,0.50654f,0.51073f,0.42282f,0.24699f,0.07954f,-0.0041863f,-0.058608f,-0.092098f,-0.092098f,-0.071167f,-0.054422f,-0.050235f,-0.050235f,-0.058608f,-0.058608f,-0.071167f,-0.07954f,-0.07954f,-0.096285f,-0.083726f,-0.075353f,-0.083726f,-0.075353f,-0.075353f,-0.062794f,-0.07954f,-0.0083726f,0.0083726f,-0.058608f,-0.087912f,-0.066981f,-0.075353f,0.1214f,1.0089f,-0.3349f,-0.74935f,-0.29304f,-0.0083726f,0.054422f,0.10047f,0.17582f,0.27211f,0.33072f,0.41444f,0.48561f,0.48561f,0.43119f,0.3349f,0.16327f,0.050235f,-0.020931f,-0.050235f,-0.054422f,-0.058608f,-0.050235f,-0.050235f,-0.058608f,-0.046049f,-0.0041863f,-0.066981f,-0.054422f,-0.087912f,-0.071167f,-0.087912f,-0.087912f,-0.075353f,-0.07954f,-0.058608f,-0.054422f,-0.071167f,-0.062794f,-0.096285f,0f,-0.016745f,-0.071167f,-0.096285f,-0.075353f,-0.062794f,0.2135f,1.0842f,-0.37258f,-0.67399f,-0.24699f,0.012559f,0.071167f,0.11303f,0.17582f,0.23443f,0.33072f,0.44793f,0.50235f,0.57771f,0.56096f,0.42282f,0.21769f,0.050235f,-0.041863f,-0.083726f,-0.10047f,-0.096285f,-0.07954f,-0.083726f,-0.062794f,-0.087912f,-0.07954f,-0.092098f,-0.10466f,-0.10466f,-0.11303f,-0.10884f,-0.11303f,-0.13396f,-0.11722f,-0.10884f,-0.1214f,-0.096285f,-0.11303f,0.016745f,-0.03349f,-0.083726f,-0.10466f,-0.10466f,-0.087912f,0.49817f,1.0675f,-0.75353f,-0.66562f,-0.22606f,-0.025118f,0.041863f,0.07954f,0.17582f,0.27211f,0.34746f,0.45212f,0.52747f,0.58189f,0.5191f,0.31816f,0.12977f,0.029304f,-0.03349f,-0.054422f,-0.092098f,-0.062794f,-0.050235f,-0.050235f,-0.016745f,-0.03349f,-0.03349f,-0.054422f,-0.046049f,-0.041863f,-0.03349f,-0.037677f,-0.03349f,-0.046049f,-0.050235f,-0.041863f,-0.041863f,-0.03349f,-0.020931f,-0.020931f,0.0041863f,-0.025118f,0.087912f,0.020931f,0f,-0.029304f,-0.012559f,0.029304f,0.84563f,1.3187f,-0.60283f,-0.44375f,-0.025118f,0.092098f,0.13396f,0.19257f,0.24699f,0.34746f,0.43956f,0.56934f,0.60701f,0.62794f,0.59027f,0.3977f,0.20931f,0.083726f,0.0083726f,-0.016745f,-0.0083726f,-0.012559f,0f,0.0041863f,0.0041863f,-0.0083726f,-0.0083726f,0.0041863f,-0.029304f,-0.03349f,-0.03349f,-0.050235f,-0.050235f,-0.046049f,-0.046049f,-0.054422f,-0.058608f,-0.046049f,-0.037677f,-0.037677f,-0.054422f,0.046049f,-0.020931f,-0.046049f,-0.058608f,-0.050235f,-0.025118f,0.74097f,1.1219f,-0.72004f,-0.52747f,-0.050235f,0.03349f,0.087912f,0.16327f,0.22606f,0.29723f,0.40188f,0.48142f,0.55259f,0.56096f,0.47305f,0.29723f,0.10884f,-0.012559f,-0.054422f,-0.087912f,-0.096285f,-0.083726f,-0.092098f,-0.046049f,-0.058608f,-0.058608f,-0.041863f,-0.087912f,-0.083726f,-0.087912f,-0.083726f,-0.087912f,-0.087912f,-0.087912f,-0.083726f,-0.096285f,-0.083726f,-0.10466f,-0.096285f,-0.096285f,-0.10047f,-0.096285f,-0.075353f,-0.050235f,-0.07954f,0.046049f,0f,-0.041863f,-0.075353f,-0.058608f,-0.046049f,0.47305f,1.1722f,-0.52329f,-0.50654f,-0.13815f,0.025118f,0.10466f,0.11722f,0.18001f,0.2428f,0.3056f,0.3977f,0.46468f,0.4898f,0.46886f,0.35583f,0.20513f,0.087912f,0.016745f,-0.020931f,-0.03349f,-0.041863f,-0.016745f,-0.025118f,-0.0041863f,0.03349f,-0.0083726f,-0.0083726f,-0.012559f,-0.020931f,-0.029304f,-0.03349f,-0.041863f,-0.020931f,-0.029304f,-0.016745f,-0.012559f,-0.025118f,-0.025118f,-0.0041863f,-0.0041863f };
-        for(int i = 0;i<data.length;i++){
-            data[i] = data[i]*200f;
+        for(int i = 0;i<totalData;i++){
+            data[i] = data[i]*100f;
         }
         hasData = true;
-        int step = 1;//步进值，默认为3，值越大步进越多，绘制越快，精度越低
-        final int counts = (data.length / width) * step;//每个横向像素点所需步进的纵向值
-        final int halfHeight = height / 2;
-        drawData = new float[(width / step) * 4];
-        for (int i = 0; i < width / step; i++) {
+        final float step = (width * 1f) / (totalData * 1f);//每个横向像素点所需步进的纵向值
+        drawData = new float[totalData * 4];
+        for (int i = 0; i < totalData; i++) {
             drawData[i * 4] = i * step;
-            drawData[i * 4 + 1] = -(data[i * counts] * 0.5f) + halfHeight;
+            drawData[i * 4 + 1] = -(data[i]);
             drawData[i * 4 + 2] = (i + 1) * step;
-            drawData[i * 4 + 3] = -(data[(i + 1) * counts] * 0.5f) + halfHeight;
+            drawData[i * 4 + 3] = -(data[(i + 1)]);
         }
-//            switch (dataType)
-//            {
-//                case GET_THIS_PAGE:{
-//                    new PostRequest().execute(GET_THIS_PAGE);
-//                }
-//                break;
-//                case GET_PRE_PAGE:{
-//                    new PostRequest().execute(GET_PRE_PAGE);
-//                }
-//                break;
-//                case GET_NEXT_PAGE:{
-//                    new PostRequest().execute(GET_NEXT_PAGE);
-//                }
-//                break;
-//                default:
-//                    new PostRequest().execute(GET_THIS_PAGE);
-//            }
-
         return hasData;
     }
 
@@ -224,92 +240,5 @@ public class ChartView extends View{
         }
         return true;
     }
-
-    /*class PostRequest extends AsyncTask<Integer, String, String> {
-
-        *//**
-         * 无参数构造发送请求函数
-         * 默认构造url为http://www.bit-health.com/ecg/drawEcg.php
-         * 默认起始页第0页
-         *//*
-        public PostRequest(){
-        }
-
-        public PostRequest(String url,String eventId,Integer page)
-        {
-            _eventId = eventId;
-            _page = page;
-            _url = url;
-        }
-
-        @Override
-        protected String doInBackground(Integer... type) {
-            String responseString = "";
-            HttpClient httpclient = new DefaultHttpClient();
-            HttpResponse response;
-            try {
-                String urlParm = null;
-                if(type[0]==GET_THIS_PAGE) {
-                    urlParm = "?type="+_page+"&EventId="+_eventId;
-                }
-                else if(type[0]==GET_NEXT_PAGE) {
-                    _page++;
-                    urlParm = "?type="+_page+"&EventId="+_eventId;
-                }
-                else if(type[0]==GET_PRE_PAGE) {
-                    _page--;
-                    if(_page<0) _page=0;//页数不能小于0
-                    urlParm = "?type="+_page+"&EventId="+_eventId;
-                }
-                response = httpclient.execute(new HttpGet(getUrl()+urlParm));
-                StatusLine statusLine = response.getStatusLine();
-                if(statusLine.getStatusCode() == HttpStatus.SC_OK){
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    response.getEntity().writeTo(out);
-                    out.close();
-                    responseString = out.toString();
-                } else{
-                    //Closes the connection.
-                    response.getEntity().getContent().close();
-                    throw new IOException(statusLine.getReasonPhrase());
-                }
-            } catch (ClientProtocolException e) {
-                //TODO Handle problems..
-            } catch (IOException e) {
-                //TODO Handle problems..
-            }
-            return responseString;
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-            try {
-                JSONObject obj = new JSONObject(result);
-                if (0 == obj.getInt("flag") || 1 == obj.getInt("flag"))//得到的回复中含有数据
-                {
-                    JSONArray data = obj.getJSONArray("data");//得到的心电图数据
-                    hasData = true;
-                    int step = render.getSiatLineStep();//步进值，默认为3，值越大步进越多，绘制越快，精度越低
-                    final int counts = (data.length() / width) * step;//每个横向像素点所需步进的纵向值
-                    final int halfHeight = height / 2;
-                    drawData = new float[(width / step) * 4];
-                    for (int i = 0; i < width / step; i++) {
-                        drawData[i * 4] = i * step;
-                        drawData[i * 4 + 1] = (-data.getInt(i * counts) * 0.5f) + halfHeight;
-                        drawData[i * 4 + 2] = (i + 1) * step;
-                        drawData[i * 4 + 3] = (-data.getInt((i + 1) * counts) * 0.5f) + halfHeight;
-                    }
-                } else if (2 == obj.getInt("flag"))//没有数据了
-                {
-                    hasData = false;
-                }
-            }catch(Exception e)
-            {
-                e.printStackTrace();
-            }
-            invalidate();
-        }
-    }*/
 
 }
