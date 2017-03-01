@@ -1,4 +1,4 @@
-package com.liuqingwei.electrocardiogram;
+package com.liuqingwei.library.electrocardiogram;
 
 import android.graphics.Color;
 import android.graphics.Typeface;

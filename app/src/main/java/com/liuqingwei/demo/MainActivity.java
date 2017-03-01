@@ -4,9 +4,9 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.widget.LinearLayout;
 
-import com.liuqingwei.electrocardiogram.ChartView;
+import com.liuqingwei.library.electrocardiogram.ChartView;
 import com.liuqingwei.electrocardiogram.R;
-import com.liuqingwei.electrocardiogram.Renderer;
+import com.liuqingwei.library.electrocardiogram.Renderer;
 
 public class MainActivity extends Activity {
 
@@ -29,7 +29,7 @@ public class MainActivity extends Activity {
         view.setMinimumWidth(500);
 
         //通知view组件重绘
-        view.invalidate();
+//        view.invalidate();
         layout.addView(view);
     }
 }

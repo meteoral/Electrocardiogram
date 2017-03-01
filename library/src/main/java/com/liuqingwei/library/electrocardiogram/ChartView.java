@@ -1,4 +1,4 @@
-package com.liuqingwei.electrocardiogram;
+package com.liuqingwei.library.electrocardiogram;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -86,13 +86,14 @@ public class ChartView extends View{
         if(speMode == MeasureSpec.UNSPECIFIED){
             Log.d("MyView", "---UNSPECIFIED---");
         }
+        int testSize = MeasureSpec.makeMeasureSpec(200,MeasureSpec.AT_MOST);
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), speSize);
-        width = getMeasuredWidth();
-        height = getMeasuredHeight();
     }
     @Override
     public void onSizeChanged (int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        width = getMeasuredWidth();
+        height = getMeasuredHeight();
     }
     @Override
     protected void onDraw(Canvas canvas) {
