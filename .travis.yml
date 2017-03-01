@@ -4,3 +4,6 @@ android:
     - build-tools-25.0.2
     - android-18
     - extra
+    licenses:
+        - 'android-sdk-license-.+'
+        - 'google-gdk-license-.+'
