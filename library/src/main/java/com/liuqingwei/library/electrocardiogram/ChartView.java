@@ -72,24 +72,6 @@ public class ChartView extends View{
     }
 
     @Override
-    public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int speSize = MeasureSpec.getSize(heightMeasureSpec);
-        int speMode = MeasureSpec.getMode(heightMeasureSpec);
-        Log.d("MyView", "---speSize = " + speSize + "");
-        Log.d("MyView", "---speMode = " + speMode + "");
-        if(speMode == MeasureSpec.AT_MOST){
-            Log.d("MyView", "---AT_MOST---");
-        }
-        if(speMode == MeasureSpec.EXACTLY){
-            Log.d("MyView", "---EXACTLY---");
-        }
-        if(speMode == MeasureSpec.UNSPECIFIED){
-            Log.d("MyView", "---UNSPECIFIED---");
-        }
-        int testSize = MeasureSpec.makeMeasureSpec(200,MeasureSpec.AT_MOST);
-        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), speSize);
-    }
-    @Override
     public void onSizeChanged (int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         width = getMeasuredWidth();
